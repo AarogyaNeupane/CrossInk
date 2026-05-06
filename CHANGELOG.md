@@ -12,6 +12,7 @@
 - Guard SPI bus lock acquisition so a failed recursive mutex take no longer marks the lock as held and triggers a mismatched release
 - Harden EPUB section-cache writes and promotion so truncated SD writes fail fast, temp caches are synced before rename, and invalid page-cache files are less likely to persist across reloads
 - Reject invalid serialized string lengths before allocation so corrupted cache data cannot trigger oversized string resizes during reads
+- Relax the EPUB low-memory image fallback so inline images are no longer suppressed solely because the heap is fragmented while overall free memory is still above the safety threshold
 
 ## [v1.2.9.1] - 2026-05-03
 

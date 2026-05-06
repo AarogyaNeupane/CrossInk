@@ -26,7 +26,6 @@ constexpr size_t MIN_SIZE_FOR_POPUP = 10 * 1024;  // 10KB
 constexpr size_t PARSE_BUFFER_SIZE = 1024;
 constexpr size_t IMAGE_EXTRACT_CHUNK_SIZE = 1024;
 constexpr size_t MIN_FREE_HEAP_FOR_IMAGE_EXTRACT = 48 * 1024;
-constexpr size_t MIN_MAX_ALLOC_FOR_IMAGE_EXTRACT = 36 * 1024;
 
 const char* BLOCK_TAGS[] = {"p", "li", "div", "br", "blockquote"};
 constexpr int NUM_BLOCK_TAGS = sizeof(BLOCK_TAGS) / sizeof(BLOCK_TAGS[0]);
@@ -755,10 +754,9 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
         {
           const uint32_t freeHeap = ESP.getFreeHeap();
           const uint32_t maxAllocHeap = ESP.getMaxAllocHeap();
-          if (!self->lowMemoryImageFallback &&
-              (freeHeap < MIN_FREE_HEAP_FOR_IMAGE_EXTRACT || maxAllocHeap < MIN_MAX_ALLOC_FOR_IMAGE_EXTRACT)) {
+          if (!self->lowMemoryImageFallback && freeHeap < MIN_FREE_HEAP_FOR_IMAGE_EXTRACT) {
             self->lowMemoryImageFallback = true;
-            LOG_ERR("EHP", "Low heap before image extraction (%u free, %u max alloc); suppressing inline images",
+            LOG_ERR("EHP", "Low free heap before image extraction (%u free, %u max alloc); suppressing inline images",
                     freeHeap, maxAllocHeap);
           }
 
@@ -799,10 +797,9 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
 
                   const uint32_t postExtractFreeHeap = ESP.getFreeHeap();
                   const uint32_t postExtractMaxAllocHeap = ESP.getMaxAllocHeap();
-                  if (postExtractFreeHeap < MIN_FREE_HEAP_FOR_IMAGE_EXTRACT ||
-                      postExtractMaxAllocHeap < MIN_MAX_ALLOC_FOR_IMAGE_EXTRACT) {
+                  if (postExtractFreeHeap < MIN_FREE_HEAP_FOR_IMAGE_EXTRACT) {
                     self->lowMemoryImageFallback = true;
-                    LOG_ERR("EHP", "Low heap after image extraction (%u free, %u max alloc); suppressing image",
+                    LOG_ERR("EHP", "Low free heap after image extraction (%u free, %u max alloc); suppressing image",
                             postExtractFreeHeap, postExtractMaxAllocHeap);
                     Storage.remove(cachedImagePath.c_str());
                     self->skipUntilDepth = self->depth;
@@ -956,11 +953,12 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
                 Storage.remove(cachedImagePath.c_str());
                 const uint32_t postFailureFreeHeap = ESP.getFreeHeap();
                 const uint32_t postFailureMaxAllocHeap = ESP.getMaxAllocHeap();
-                if (!self->lowMemoryImageFallback && (postFailureFreeHeap < MIN_FREE_HEAP_FOR_IMAGE_EXTRACT ||
-                                                      postFailureMaxAllocHeap < MIN_MAX_ALLOC_FOR_IMAGE_EXTRACT)) {
+                if (!self->lowMemoryImageFallback && postFailureFreeHeap < MIN_FREE_HEAP_FOR_IMAGE_EXTRACT) {
                   self->lowMemoryImageFallback = true;
-                  LOG_ERR("EHP", "Disabling remaining image extraction after failure (%u free, %u max alloc)",
-                          postFailureFreeHeap, postFailureMaxAllocHeap);
+                  LOG_ERR(
+                      "EHP",
+                      "Disabling remaining image extraction after failure with low free heap (%u free, %u max alloc)",
+                      postFailureFreeHeap, postFailureMaxAllocHeap);
                 }
                 LOG_ERR("EHP", "Failed to extract image");
               }
