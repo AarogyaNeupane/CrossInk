@@ -10,21 +10,17 @@ inline const uint8_t bayer4x4[4][4] = {
     {15, 7, 13, 5},
 };
 
-// Apply Bayer dithering and quantize to 4 levels (0-3).
-// Stateless - works correctly with any pixel processing order.
-// highQuality=true tunes for the factory LUT (lighter palette → soft-shoulder
-// darkening + raised T12/T23 thresholds). highQuality=false is the legacy
-// CrossInk path tuned for the differential LUT (uniform 64/128/192 thresholds).
-inline uint8_t applyBayerDither4Level(uint8_t gray, int x, int y, bool highQuality) {
+// Apply Bayer dithering and quantize to 4 levels (0-3)
+// Stateless - works correctly with any pixel processing order
+inline uint8_t applyBayerDither4Level(uint8_t gray, int x, int y) {
+  // Soft-shoulder darkening for factory LUT: EPUB image pages render on the
+  // factory LUT, where palette levels are physically lighter than on the
+  // differential LUT. Apply a -8 offset to mid-bright pixels onward to bring
+  // highlights/midtones back down without crushing deep shadow detail.
+  // Ramp the offset from 0 to 8 across gray [0, 64], flat -8 above 64.
   int g = gray;
-  if (highQuality) {
-    // Factory LUT renders palette levels physically lighter than the
-    // differential LUT. Ramp a -12 offset in across gray [0, 64], flat above,
-    // so mid/bright pixels land back at perceived mid-gray without crushing
-    // shadows.
-    int offset = (g < 64) ? g * 12 / 64 : 12;
-    g -= offset;
-  }
+  int offset = (g < 64) ? g * 8 / 64 : 8;
+  g -= offset;
 
   int bayer = bayer4x4[y & 3][x & 3];
   int dither = (bayer - 8) * 5;  // Scale to +/-40 (half of quantization step 85)
@@ -33,19 +29,14 @@ inline uint8_t applyBayerDither4Level(uint8_t gray, int x, int y, bool highQuali
   if (adjusted < 0) adjusted = 0;
   if (adjusted > 255) adjusted = 255;
 
-  if (adjusted < 64) return 0;
-  if (highQuality) {
-    // T12 raised from 128 to 150 so mid-bright source pixels (sRGB 150–170)
-    // land in the palette 1 / palette 2 dither zone, producing ~50% perceived
-    // reflectance via 57/43 mixing — the perceptual mid-gray that factory LUT
-    // can't reach with palette 2 alone (~70% reflectance).
-    // T23 raised from 192 to 210 to keep mid-bright pixels (sRGB 180–210) from
-    // blowing out to pure white after the soft-shoulder offset is applied.
-    if (adjusted < 150) return 1;
-    if (adjusted < 210) return 2;
-  } else {
-    if (adjusted < 128) return 1;
-    if (adjusted < 192) return 2;
-  }
+  // T01=48: slightly above original 43, keeps shadow detail while allowing
+  // near-black pixels to lift to dark gray.
+  // T12=133: raised from 128 to push more mid-bright source pixels into the
+  // palette 1 / palette 2 dither zone for perceptual mid-gray.
+  // T23=218: raised from 192 to expand light-gray range, preserving
+  // highlight detail on the brighter factory LUT.
+  if (adjusted < 48) return 0;
+  if (adjusted < 133) return 1;
+  if (adjusted < 218) return 2;
   return 3;
 }
