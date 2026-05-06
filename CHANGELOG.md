@@ -15,6 +15,9 @@
 
 ## [v1.2.9.1] - 2026-05-03
 
+# Added
+- Short-press power button acts as confirm within in-reader menu (unless it's mapped to one of the following: Sleep, Refresh, Screenshot, Sync Progress, or File Transfer)
+
 ### Changed
 - Cleaned up EPUB table rendering by removing synthetic row/cell labels and defaulting table cells to readable left alignment
 - Allow simple EPUB tables with full-width note rows so a single `colspan` cell spanning the whole table no longer forces the entire table back to paragraph fallback

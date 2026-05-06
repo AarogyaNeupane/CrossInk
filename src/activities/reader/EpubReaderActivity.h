@@ -71,6 +71,11 @@ class EpubReaderActivity final : public Activity {
   };
   static void readFolderMoveTask(void* arg);
 
+  // Context saved from the last factory-gray image page render, used by onScreenshotRequest().
+  bool lastPageWasFactoryGray = false;
+  int lastFactoryMarginTop = 0;
+  int lastFactoryMarginLeft = 0;
+
   // Footnote support
   std::vector<FootnoteEntry> currentPageFootnotes;
   struct SavedPosition {
@@ -80,6 +85,13 @@ class EpubReaderActivity final : public Activity {
   static constexpr int MAX_FOOTNOTE_DEPTH = 3;
   SavedPosition savedPositions[MAX_FOOTNOTE_DEPTH] = {};
   int footnoteDepth = 0;
+
+  struct PageRenderCtx {
+    Page* page;
+    int fontId, left, top;
+    const EpubReaderActivity* activity;
+  };
+  static void renderPageCallback(const GfxRenderer& r, const void* raw);
 
   void renderContents(std::unique_ptr<Page> page, int orientedMarginTop, int orientedMarginRight,
                       int orientedMarginBottom, int orientedMarginLeft);
@@ -118,6 +130,7 @@ class EpubReaderActivity final : public Activity {
   void onExit() override;
   void loop() override;
   void render(RenderLock&& lock) override;
+  void onScreenshotRequest() override;
   bool preventAutoSleep() override { return automaticPageTurnActive; }
   bool isReaderActivity() const override { return true; }
   bool canSnapshotForSleepOverlay() const override { return true; }
