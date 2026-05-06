@@ -12,9 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Nudge the Lyra Carousel cover stack slightly upward and add a bit more spacing between the total-time stat and the progress block
 
 ### Added
+- New Lyra Carousel theme that displays 3 of your most recent book covers
 - Prevent a crash when entering sleep with Page Overlay enabled if the cached EPUB page data is invalid
 - Clean up EPUB table rendering by removing synthetic row/cell labels and defaulting table cells to readable left alignment
-- Improve simple EPUB tables by buffering them into multi-column grid fragments instead of rendering each cell as an unrelated paragraph
+- Allow simple EPUB tables with full-width note rows so a single `colspan` cell spanning the whole table no longer forces the entire table back to paragraph fallback
 
 ### Fixed
 - Fix Lyra carousel navigation lag by caching per-book stats and progress once on home entry instead of re-reading from SD on every button press
